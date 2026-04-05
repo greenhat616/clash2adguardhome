@@ -47,9 +47,25 @@ export async function onRequest(context) {
         continue;
       }
 
+      // domainset 格式: +.domain 或 .domain → ||domain^
+      if (line.startsWith('+.') || line.startsWith('.')) {
+        const domain = line.startsWith('+.') ? line.slice(2) : line.slice(1);
+        if (domain) adguardRules.push(`||${domain}^`);
+        continue;
+      }
+
       // Clash 格式通常为: TYPE,VALUE,POLICY(可选)
       const parts = line.split(',');
-      
+
+      // 纯域名行（无逗号，无特殊前缀）视为 domainset 精确匹配
+      if (parts.length === 1) {
+        const domain = parts[0].trim();
+        if (domain && /^[a-zA-Z0-9]([a-zA-Z0-9\-]*\.)+[a-zA-Z]{2,}$/.test(domain)) {
+          adguardRules.push(`||${domain}^`);
+        }
+        continue;
+      }
+
       // 确保至少有类型和值
       if (parts.length < 2) continue;
 
