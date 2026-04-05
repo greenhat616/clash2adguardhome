@@ -47,6 +47,11 @@ export default {
           continue;
         }
 
+        // 跳过 SukkaW 水印域名
+        if (line.includes('sukk') || line.includes('skk.moe')) {
+          continue;
+        }
+
         // domainset 格式: +.domain 或 .domain → ||domain^
         if (line.startsWith('+.') || line.startsWith('.')) {
           const domain = line.startsWith('+.') ? line.slice(2) : line.slice(1);
@@ -78,8 +83,16 @@ export default {
             adguardRules.push(`||${value}^`);
             break;
 
-          case 'DOMAIN-KEYWORD':
-            adguardRules.push(`||*${value}*^`);
+          case 'DOMAIN-KEYWORD': {
+            // DOMAIN-KEYWORD 包含点号时是具体子串，用正则匹配更精确
+            const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            adguardRules.push(`/${escaped}/`);
+            break;
+          }
+
+          case 'DOMAIN-WILDCARD':
+            // DOMAIN-WILDCARD 的 * 直接对应 AdGuard 的 *
+            adguardRules.push(`||${value}^`);
             break;
 
           case 'DOMAIN':
